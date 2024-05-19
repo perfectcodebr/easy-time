@@ -4,11 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-enum AccountType {
-  OWNER
-  CLIENT
-}
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,12 +13,119 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Account {
+enum SchedulingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Owner {
   id BigInt @id @default(autoincrement())
   name String? @db.String(255)
   email String @unique @db.String(255)
   phone String @db.String(15)
-  accountType AccountType
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @default(now()) @db.Timestamp(6)
+  Companies Company[]
+
+  @@index([email])
+}
+
+model Company {
+  id BigInt @id @default(autoincrement())
+  name String @db.String(255)
+  address String @db.String(255)
+  companyValuation Decimal @db.Decimal(2, 1) 
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @db.Timestamp(6)
+  owner Owner @relation(fields: [ownerId], references: [id])
+  ownerId BigInt
+  Services Service[]
+  Employees Employee[]
+  Customers CustomerCompany[]
+  FavoritedBy CustomerFavoriteCompany[]
+  Schedules Scheduling[]
+}
+
+model Employee {
+  id BigInt @id @default(autoincrement())
+  name String @db.String(255)
+  email String @unique @db.String(255)
+  phone String? @db.String(15)
+  office String? @db.String(100)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @db.Timestamp(6)
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  Services EmployeeService[]
+  Schedules Scheduling[]
+
+  @@index([email])
+}
+
+model Service {
+  id BigInt @id @default(autoincrement())
+  name String @db.String(255)
+  price Decimal @db.Decimal(10, 2)
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  Employees EmployeeService[]
+  Schedules Scheduling[]
+}
+
+model EmployeeService {
+  employeeId BigInt
+  serviceId BigInt
+  Employee Employee @relation(fields: [employeeId], references: [id])
+  Service Service @relation(fields: [serviceId], references: [id])
+
+  @@id([employeeId, serviceId])
+}
+
+model Customer {
+  id BigInt @id @default(autoincrement())
+  name String @db.String(255)
+  email String @unique @db.String(255)
+  address String @db.String(255)
+  phone String? @db.String(15)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @db.Timestamp(6)
+  Schedules Scheduling[]
+  Companies CustomerCompany[]
+  Favorites CustomerFavoriteCompany[]
+
+  @@index([email])
+}
+
+model CustomerCompany {
+  customerId BigInt
+  companyId BigInt
+  customer Customer @relation(fields: [customerId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([customerId, companyId])
+}
+
+model CustomerFavoriteCompany {
+  customerId BigInt
+  companyId BigInt
+  customer Customer @relation(fields: [customerId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([customerId, companyId])
+}
+
+model Scheduling {
+  id BigInt @id @default(autoincrement())
+  date DateTime
+  status SchedulingStatus @default(PENDING)
+  customer Customer @relation(fields: [customerId], references: [id])
+  customerId BigInt
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  service Service @relation(fields: [serviceId], references: [id])
+  serviceId BigInt
+  employee Employee @relation(fields: [employeeId], references: [id])
+  employeeId BigInt
 }

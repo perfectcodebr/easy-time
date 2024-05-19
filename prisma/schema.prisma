@@ -20,6 +20,35 @@ enum SchedulingStatus {
   COMPLETED
 }
 
+enum Plan {
+  BASIC // plano inicial de R$59,90 podendo registrar de 1 até 4 funcionários, mais gestão financeira básica
+  STANDART // plano intermediário de R$99,90 podendo registrar de 1 até 8 funcionários, mais gestão financeira básica, mais gestão de Marketing
+  PREMIUM // plano avançado de R$129,90 podendo registrar funcionários ilimitado, mais gestão financeira avançada, mais gestão de Marketing, mais criação de Site 
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum CompanyStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum Status {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
 model Owner {
   id BigInt @id @default(autoincrement())
   name String? @db.String(255)
@@ -37,6 +66,9 @@ model Company {
   name String @db.String(255)
   address String @db.String(255)
   companyValuation Decimal @db.Decimal(2, 1) 
+  plan Plan @default(BASIC)
+  companyStatus CompanyStatus
+  dateToActiveProfile DateTime
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @default(now()) @db.Timestamp(6)
   owner Owner @relation(fields: [ownerId], references: [id])
@@ -46,6 +78,9 @@ model Company {
   Customers CustomerCompany[]
   FavoritedBy CustomerFavoriteCompany[]
   Schedules Scheduling[]
+  OperatingHours OperatingHours[]
+  ClosedDays ClosedDays[]
+  Needs CompanyNeed[]
 }
 
 model Employee {
@@ -54,6 +89,7 @@ model Employee {
   email String @unique @db.String(255)
   phone String? @db.String(15)
   office String? @db.String(100)
+  status Status
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @default(now()) @db.Timestamp(6)
   company Company @relation(fields: [companyId], references: [id])
@@ -89,6 +125,7 @@ model Customer {
   email String @unique @db.String(255)
   address String @db.String(255)
   phone String? @db.String(15)
+  status Status
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @default(now()) @db.Timestamp(6)
   Schedules Scheduling[]
@@ -128,4 +165,39 @@ model Scheduling {
   serviceId BigInt
   employee Employee @relation(fields: [employeeId], references: [id])
   employeeId BigInt
+}
+
+model OperatingHours {
+  id BigInt @id @default(autoincrement())
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  dayOfWeek DayOfWeek
+  openTime DateTime @db.Time
+  closeTime DateTime @db.Time
+  openTimeInterval DateTime @db.Time
+  closeTimeInterval DateTime @db.Time
+}
+
+model ClosedDays {
+  id BigInt @id @default(autoincrement())
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  dayOfWeek DayOfWeek
+  openTime DateTime @db.Time
+  closeTime DateTime @db.Time
+}
+
+model CompanyNeedTag {
+  id BigInt @id @default(autoincrement())
+  tag String @db.String(255)
+  Needs CompanyNeed[]
+}
+
+model CompanyNeed {
+  id BigInt @id @default(autoincrement())
+  company Company @relation(fields: [companyId], references: [id])
+  companyId BigInt
+  tag CompanyNeedTag? @relation(fields: [tagId], references: [id])
+  tagId BigInt?
+  customText String?
 }
